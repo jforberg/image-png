@@ -2205,6 +2205,22 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    #[cfg(all(unix, not(target_pointer_width = "32")))]
+    fn encoded_file_is_not_empty() -> Result<()> {
+        let file = tempfile::tempfile()?;
+        let w = io::BufWriter::new(file.try_clone()?);
+        let encoder = Encoder::new(w, 128, 128);
+        let mut writer = encoder.write_header()?;
+        let data = vec![0; 128 * 128];
+        writer.write_image_data(&data)?;
+        writer.finish()?;
+        // After calling Writer::finish, the written file shall not be empty.
+        let file_size = file.metadata()?.len();
+        assert!(file_size != 0);
+        Ok(())
+    }
+
     /// A Writer that only writes a few bytes at a time
     struct RandomChunkWriter<R: Rng, W: Write> {
         rng: R,
